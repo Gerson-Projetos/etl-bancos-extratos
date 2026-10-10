@@ -56,17 +56,25 @@ class Database:
 
     def create_tables(self):
         """Cria todas as tabelas registradas no Base no banco de dados"""
+        if self._db_schema:
+            from sqlalchemy import text, create_engine
+            # Criar a engine temporária com AUTOCOMMIT para garantir a criação do schema
+            engine_temp = create_engine(self.database_url, isolation_level="AUTOCOMMIT")
+            with engine_temp.connect() as conn:
+                conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {self._db_schema}"))
+            engine_temp.dispose()
+            
         Base.metadata.create_all(bind=self.engine)
 
 
     """Define as variaveis do banco de dados"""
     def set_database(self):
-        self._db_user = os.getenv("DB_USERNAME")
-        self._db_password = os.getenv("DB_PASSWORD")
-        self._db_host = os.getenv("DB_HOST", "localhost")
-        self._db_port = os.getenv("DB_PORT", "5432")
-        self._db_database = os.getenv("DB_DATABASE")
-        self._db_schema = os.getenv("DB_SCHEMA")
+        self._db_user = os.getenv("DB_USERNAME").strip() if os.getenv("DB_USERNAME") else None
+        self._db_password = os.getenv("DB_PASSWORD").strip() if os.getenv("DB_PASSWORD") else None
+        self._db_host = os.getenv("DB_HOST", "localhost").strip()
+        self._db_port = os.getenv("DB_PORT", "5432").strip()
+        self._db_database = os.getenv("DB_DATABASE").strip() if os.getenv("DB_DATABASE") else None
+        self._db_schema = os.getenv("DB_SCHEMA").strip() if os.getenv("DB_SCHEMA") else None
         
         # Encodar a senha é necessário se houver caracteres especiais
         pwd_encoded = quote_plus(self._db_password) if self._db_password else ""

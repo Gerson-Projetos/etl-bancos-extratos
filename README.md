@@ -62,13 +62,16 @@ etl-bancos-extratos/
    ```
 
 3. **Configure as Variáveis de Ambiente:**
-   Crie um arquivo `.env` na raiz do projeto com as seguintes informações:
+   Crie um arquivo `.env` na raiz do projeto com as seguintes informações (baseado no `.env.example`):
    ```env
-   # PostgreSQL Connection
-   DATABASE_URL=postgresql://usuario:senha@localhost:5432/nome_do_banco
-
-   # Google Drive
-   DRIVE_ID=id_da_sua_pasta_no_google_drive
+   DRIVE_ID=seu_id_do_google_drive
+   
+   DB_DATABASE=sistemas
+   DB_USERNAME=local
+   DB_PASSWORD=sua_senha
+   DB_PORT=5432
+   DB_HOST=localhost
+   DB_SCHEMA=financeiro
    ```
 
 4. **Credenciais do Google API:**
@@ -92,6 +95,7 @@ Se preferir não instalar o Python e as dependências na sua máquina, você pod
    ```bash
    docker compose up --build
    ```
+   > **💡 Dica:** Se você alterar qualquer código Python do projeto ou atualizar o `.env`, lembre-se de usar sempre a flag `--build` para garantir que o Docker incorpore as suas novas alterações na imagem!
 
 O Docker criará:
 1. Um container com o **PostgreSQL** (`db`), já configurado na porta 5432 com um volume para não perder os dados inseridos.
