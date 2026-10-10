@@ -1,11 +1,32 @@
 services:
+  db:
+    image: postgres:15-alpine
+    container_name: etl-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: usuario
+      POSTGRES_PASSWORD: senha
+      POSTGRES_DB: nome_do_banco
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
   etl:
     build: .
     container_name: etl-bancos-extratos
+    depends_on:
+      - db
     env_file:
       - .env
+    environment:
+      # Sobrescreve o DATABASE_URL para apontar para o container do banco na rede interna
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
     # Volumes podem ser úteis para persistir/acessar as credenciais e arquivos extraídos sem precisar rebuildar a imagem
     volumes:
       - ./creds.json:/app/creds.json
       - ./client_secret.json:/app/client_secret.json
       - ./arquivos:/app/arquivos
+
+volumes:
+  pgdata:

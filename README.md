@@ -93,7 +93,9 @@ Se preferir não instalar o Python e as dependências na sua máquina, você pod
    docker compose up --build
    ```
 
-O Docker criará um ambiente leve com a versão correta do Python, instalará pacotes de sistema e bibliotecas, rodará o `main.py` de ponta a ponta e, por fim, o container será encerrado com sucesso ao concluir os processos do ETL.
+O Docker criará:
+1. Um container com o **PostgreSQL** (`db`), já configurado na porta 5432 com um volume para não perder os dados inseridos.
+2. Um container do **ETL** (`etl`), que se conectará automaticamente a esse banco local, executará o pipeline de ponta a ponta e se encerrará em seguida. O banco de dados continuará rodando para que você possa inspecionar as tabelas.
 
 ## Adicionando um Novo Banco
 
