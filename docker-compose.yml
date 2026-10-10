@@ -1,0 +1,11 @@
+services:
+  etl:
+    build: .
+    container_name: etl-bancos-extratos
+    env_file:
+      - .env
+    # Volumes podem ser úteis para persistir/acessar as credenciais e arquivos extraídos sem precisar rebuildar a imagem
+    volumes:
+      - ./creds.json:/app/creds.json
+      - ./client_secret.json:/app/client_secret.json
+      - ./arquivos:/app/arquivos

@@ -74,10 +74,23 @@ etl-bancos-extratos/
 4. **Credenciais do Google API:**
    Baixe o seu arquivo `client_secret.json` do Google Cloud Console e coloque-o na raiz do projeto. No primeiro acesso, o sistema gerará o `creds.json` automaticamente (ambos estão listados no `.gitignore`).
 
-5. **Execute:**
+5. **Execute Localmente:**
    ```bash
    python main.py
    ```
+
+### Executando com Docker 🐳
+
+Se preferir não instalar o Python e as dependências na sua máquina, você pode rodar todo o pipeline de forma isolada usando o Docker:
+
+1. **Pré-requisito:** Ter o [Docker](https://www.docker.com/) instalado.
+2. Certifique-se de ter configurado o `.env` e gerado as credenciais do Google API (`client_secret.json` e `creds.json`) na raiz do projeto. Esses arquivos serão mapeados via volumes para o container.
+3. **Suba o container:**
+   ```bash
+   docker compose up --build
+   ```
+
+O Docker criará um ambiente leve com a versão correta do Python, instalará pacotes de sistema e bibliotecas, rodará o `main.py` de ponta a ponta e, por fim, o container será encerrado com sucesso ao concluir os processos do ETL.
 
 ## Adicionando um Novo Banco
 
