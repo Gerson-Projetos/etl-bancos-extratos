@@ -72,7 +72,7 @@ etl-bancos-extratos/
    ```
 
 4. **Credenciais do Google API:**
-   Baixe o seu arquivo `client_secret.json` do Google Cloud Console e coloque-o na raiz do projeto. No primeiro acesso, o sistema gerará o `creds.json` automaticamente (ambos estão listados no `.gitignore`).
+   Baixe o seu arquivo `client_secret.json`, `creds.json` do Google Cloud Console e coloque-o na raiz do projeto. (ambos estão listados no `.gitignore`).
 
 5. **Execute Localmente:**
    ```bash
