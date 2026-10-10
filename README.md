@@ -72,7 +72,10 @@ etl-bancos-extratos/
    ```
 
 4. **Credenciais do Google API:**
-   Baixe o seu arquivo `client_secret.json`, `creds.json` do Google Cloud Console e coloque-o na raiz do projeto. (ambos estão listados no `.gitignore`).
+   - Acesse o [Google Cloud Console](https://console.cloud.google.com/).
+   - Crie um projeto e certifique-se de ativar a **Google Drive API**.
+   - Crie a sua credencial (Service Account ou OAuth Client ID). **Atenção:** Se usar uma Conta de Serviço (Service Account), você precisará ir na sua pasta do Google Drive e **compartilhá-ela (permissão de Leitor)** com o e-mail gerado pela Service Account.
+   - Baixe o seu arquivo de credenciais, renomeie para `client_secret.json` ou `creds.json` e coloque-o na raiz do projeto (ambos estão protegidos no `.gitignore`).
 
 5. **Execute Localmente:**
    ```bash
