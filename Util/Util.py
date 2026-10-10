@@ -4,31 +4,57 @@ import pandas as pd
 
 class Util:
 
-    __bancos = {'itau':'extrato_itau'}
-
     def __init__(self) -> None:
         pass
 
-    def getArquivosProcessados(self, banco) -> list:
+    def getArquivosProcessados(self) -> list:
         """
-        Consulta o banco de dados e retorna a lista de arquivos (nomes base) 
-        que já foram processados e inseridos na tabela extrato_itau.
+        Consulta o banco de dados (tabela contas) para buscar todas as tabelas de extratos ativas,
+        e retorna a lista global de arquivos (nomes base) que já foram processados.
         """
-        from Conn.Database import get_db_session
+        from Conn.Database import get_db_session, Database
         from sqlalchemy import text
+        from Models.Conta import Conta
 
-        if banco not in self.__bancos:
-            return []
-            
-        tbl = self.__bancos[banco]
+        # Garante que a tabela 'contas' exista no banco antes de tentarmos consultá-la
+        Database().create_tables()
+
+        arquivos_processados = []
         try:
             with get_db_session() as session:
-                resultado = session.execute(text(f"SELECT DISTINCT arquivo_origem FROM {tbl} WHERE arquivo_origem IS NOT NULL;"))
-                # Remove a extensão para comparar a raiz do nome do arquivo
-                arquivos = [row[0].rsplit('.', 1)[0] for row in resultado.fetchall()]
-                return arquivos
+                # 1. Pega todas as contas que têm tabela de extrato configurada
+                contas = session.query(Conta).all()
+                
+                # Se a tabela estiver vazia (primeira execução), inserimos os dados automaticamente
+                if not contas:
+                    print("Tabela 'contas' vazia. Inserindo dados iniciais...")
+                    contas_iniciais = [
+                        Conta(banco='Itau', descricao='Conta corrente', tbl_extrato='extrato_itau'),
+                    ]
+                    session.add_all(contas_iniciais)
+                    session.commit()
+                    contas = contas_iniciais
+                
+                # Filtra apenas as contas que possuem tbl_extrato configurada
+                contas_validas = [c for c in contas if c.tbl_extrato]
+                
+                if not contas_validas:
+                    return []
+                
+                # Usa 'set' para evitar consultar a mesma tabela de extrato duas vezes
+                tabelas_extrato = set([c.tbl_extrato for c in contas_validas])
+                
+                for tbl in tabelas_extrato:
+                    try:
+                        resultado = session.execute(text(f"SELECT DISTINCT arquivo_origem FROM {tbl} WHERE arquivo_origem IS NOT NULL;"))
+                        arquivos = [row[0].rsplit('.', 1)[0] for row in resultado.fetchall()]
+                        arquivos_processados.extend(arquivos)
+                    except Exception as e_tbl:
+                        session.rollback()
+                        
+                return list(set(arquivos_processados))
         except Exception as e:
-            print(f"Aviso ao verificar arquivos processados no banco: {e}")
+            print(f"Aviso ao verificar arquivos processados dinamicamente: {e}")
             return []
     
     def converter_para_float(self, valor):

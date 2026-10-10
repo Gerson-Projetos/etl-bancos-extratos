@@ -5,14 +5,7 @@ dotenv.load_dotenv()
 
 def getArquivosProcessados():
     from Util.Util import Util
-    util = Util()
-    
-    bancos = ['itau', 'mercado_pago']
-    arquivos = []
-  
-    for banco in bancos:
-        arquivos.extend(util.getArquivosProcessados(banco))
-    return arquivos
+    return Util().getArquivosProcessados()
     
 def dowloadExtratos(ignorados: list = None):
     from Services.GoogleDriveService import GoogleDriveData
@@ -45,12 +38,12 @@ def cleanArquivos():
 def main():
 
     
-    # 1. Pega os arquivos que já estão salvos no Banco de Dados usando o Util
+    # 1. Pega os arquivos que já forma extraidos
     arquivos_ignorados = getArquivosProcessados()
     if arquivos_ignorados:
         print(f"O sistema encontrou {len(arquivos_ignorados)} arquivo(s) já registrado(s) no Banco. Eles não serão baixados novamente.")
 
-    # 2. Baixa apenas os novos
+    # 2. Executa o ETL, fazendo o download, conversão, extração e limpeza
     dowloadExtratos(arquivos_ignorados)
     converteArquivos()
     runEtl()
