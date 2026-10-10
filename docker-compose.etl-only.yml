@@ -1,0 +1,11 @@
+services:
+  etl:
+    build: .
+    container_name: etl-bancos-extratos-standalone
+    env_file:
+      - .env
+    volumes:
+      # Mantendo os volumes para acessar suas credenciais e a pasta de arquivos
+      - ./creds.json:/app/creds.json
+      - ./client_secret.json:/app/client_secret.json
+      - ./arquivos:/app/arquivos
