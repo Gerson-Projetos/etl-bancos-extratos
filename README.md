@@ -98,7 +98,7 @@ Se preferir não instalar o Python e as dependências na sua máquina, você pod
    > **💡 Dica:** Se você alterar qualquer código Python do projeto ou atualizar o `.env`, lembre-se de usar sempre a flag `--build` para garantir que o Docker incorpore as suas novas alterações na imagem!
 
 O Docker criará:
-1. Um container com o **PostgreSQL** (`db`), já configurado na porta 5432 com um volume para não perder os dados inseridos.
+1. Um container com o **PostgreSQL** (`db`), já configurado na porta 5433 com um volume para não perder os dados inseridos.
 2. Um container do **ETL** (`etl`), que se conectará automaticamente a esse banco local, executará o pipeline de ponta a ponta e se encerrará em seguida. O banco de dados continuará rodando para que você possa inspecionar as tabelas.
 
 ## Adicionando um Novo Banco
