@@ -1,0 +1,14 @@
+*__pycache__*
+*__init__*
+*.xlsx
+*arquivos*
+*venv*
+*env*
+*.pyc
+*.pyo
+*.pyd
+*.so
+*.log
+*.db
+client_secret.json
+creds.json
