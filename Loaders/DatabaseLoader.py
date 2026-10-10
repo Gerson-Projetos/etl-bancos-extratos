@@ -24,9 +24,15 @@ class DatabaseLoader:
             row_dict = {}
             for c in model_class.__table__.columns:
                 val = getattr(r, c.name)
+                
                 # Ignora a coluna de Chave Primária
                 if c.primary_key and val is None:
+                    continue 
+                
+                # Ignora colunas que têm valor default no banco (ex: created_at) quando estão vazias
+                if val is None and c.server_default is not None:
                     continue
+                    
                 row_dict[c.name] = val
                 
             dados.append(row_dict)
