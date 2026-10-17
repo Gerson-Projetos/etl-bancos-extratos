@@ -14,28 +14,61 @@ Um pipeline ETL (Extract, Transform, Load) construído em Python para automatiza
 
 ## Estrutura do Projeto
 
-O projeto foi organizado para separar claramente as responsabilidades:
+O projeto foi organizado seguindo princípios de arquitetura modular e SOLID para separar claramente as responsabilidades:
 
 ```text
 etl-bancos-extratos/
 │
-├── Conn/                   # Configurações de Conexão (SQLAlchemy, PostgreSQL)
-├── Extractors/             # Lógica de extração e higienização dos dados (.xlsx -> Objetos)
-├── Loaders/                # Classes responsáveis por injetar dados no Banco de Dados
-├── Models/                 # Modelos ORM e Tabelas do Banco de Dados (ex: ExtratoItau)
-├── Services/               # Orquestração (GoogleDrive, FileConverter, Pipeline do ETL)
-├── Util/                   # Funções globais e utilitárias (conversões de moeda, checagem)
-├── arquivos/               # Pastas temporárias locais (baixados/, processados/)
-├── main.py                 # Arquivo principal que engatilha o pipeline
-└── requirements.txt        # Dependências do projeto (Pandas, SQLAlchemy, Google APIs, etc)
+├── Conn/                           # Conexão com Banco de Dados
+│   └── Database.py                 # Conexão SQLAlchemy e gerenciador de sessão (get_db_session)
+│
+├── Extractors/                     # Extratores de Dados Bancários
+│   ├── ItauExtractor.py            # Extração de extratos do Itaú (.xlsx)
+│   └── MercadoPagoExtractor.py     # Extração de extratos do Mercado Pago (.pdf e .xlsx)
+│
+├── Loaders/                        # Carga de Dados no Banco
+│   ├── DatabaseLoader.py           # Classe base para bulk insert com ON CONFLICT DO NOTHING
+│   ├── ItauLoader.py               # Loader específico do Itaú com validação de tipo
+│   └── MercadoPagoLoader.py        # Loader específico do Mercado Pago
+│
+├── Models/                         # Modelos ORM (SQLAlchemy)
+│   ├── Conta.py                    # Cadastro de contas e mapeamento das tabelas de extrato
+│   ├── ExtratoItau.py              # Tabela 'extrato_itau' com hash SHA-256 anti-duplicidade
+│   └── ExtratoMercadoPago.py       # Tabela 'extrato_mercado_pago' com hash SHA-256
+│
+├── Services/                       # Serviços e Orquestração
+│   ├── FileConverterService.py     # Conversão de PDFs/CSVs para XLSX (com fallback tabular)
+│   ├── GoogleApiService.py         # Autenticação base nas APIs do Google
+│   ├── GoogleDriveService.py       # Download e listagem de extratos no Google Drive
+│   └── ProcessExtratoService.py    # Roteamento inteligente de bancos e execução do pipeline
+│
+├── Util/                           # Utilitários Globais
+│   └── Util.py                     # Tratamento de moedas, conversões e verificação de processados
+│
+├── arquivos/                       # Pastas temporárias locais
+│   ├── baixados/                   # Extratos baixados do Drive (PDFs/CSVs/XLSX)
+│   └── processados/                # Extratos convertidos prontos para o ETL
+│
+├── tests/                          # Testes Automatizados
+│   ├── __init__.py
+│   └── test_etapas_unit.py         # Testes unitários (Modelos, Hashes, Conversores)
+│
+├── test_etapas.py                  # Diagnóstico interativo e teste individual das 5 etapas
+├── main.py                         # Ponto de entrada com flags CLI (--etapa, --sem-limpeza)
+├── entrypoint.sh                   # Script de entrada Docker para cron e variáveis de ambiente
+├── Dockerfile                      # Imagem Docker com Python 3.12, dependências e daemon do cron
+├── docker-compose.yml              # Stack completa (ETL + Postgres) com rede isolada e subnet
+├── docker-compose.etl-only.yml     # Stack standalone do ETL para conexões a bancos externos
+├── requirements.txt                # Dependências Python (Pandas, pdfplumber, SQLAlchemy, etc)
+└── .env.example                    # Modelo de configuração de variáveis de ambiente
 ```
 
 ## Como Funciona o Pipeline (main.py)
 
 1. **Mapeamento e Download**: O script consulta a tabela de `contas` para descobrir todas as tabelas de extrato ativas. O `GoogleDriveService` entra em ação, cruza os arquivos da nuvem com os do banco de dados e faz o download apenas das novidades.
-2. **Converter**: O `FileConverterService` pega os PDFs recém-baixados e os transforma em planilhas XLSX.
-3. **Extrair & Carregar**: O `ProcessExtratoService` entra na pasta, identifica qual extrato pertence a qual banco através do nome do arquivo (ex: `itau_extrato...`), aciona o `ItauExtractor` para extrair os dados e o `ItauLoader` para persisti-los no PostgreSQL.
-4. **Limpeza**: Exclui os arquivos temporários armazenados na máquina local.
+2. **Converter**: O `FileConverterService` pega os PDFs/CSVs recém-baixados e os transforma em planilhas XLSX estruturadas.
+3. **Extrair & Carregar**: O `ProcessExtratoService` varre a pasta, identifica o banco pelo prefixo do nome do arquivo (ex: `itau...` ou `mercado_pago...`), aciona o respectivo extrator (`ItauExtractor` ou `MercadoPagoExtractor`) para extrair os dados e o loader (`ItauLoader` ou `MercadoPagoLoader`) para persisti-los no PostgreSQL com prevenção automática de duplicidades.
+4. **Limpeza**: Exclui os arquivos temporários armazenados na máquina local (a menos que a flag `--sem-limpeza` seja informada).
 
 ## Configuração e Instalação
 
@@ -136,9 +169,9 @@ Para subir a aplicação em um servidor de produção ou homologação de forma 
 1. **Pré-requisito:** Ter o [Docker](https://www.docker.com/) e o Docker Compose instalados no servidor.
 2. Configure o seu arquivo `.env` (baseado no `.env.example`) e adicione as credenciais do Google API (`client_secret.json` e `creds.json`) na raiz do projeto.
 3. **Configuração de Rede e Subnet**:
-   - O `docker-compose.yml` provisiona uma rede bridge isolada chamada `etl-network` com a subnet `172.20.0.0/24`.
+   - O `docker-compose.yml` provisiona uma rede bridge isolada chamada `etl-network` com subnet configurável via `.env` (`${NETWORK_SUBNET:-172.20.0.0/29}`) e gateway (`${NETWORK_GATEWAY:-172.20.0.1}`).
    - O banco PostgreSQL recebe o IP fixo `172.20.0.2`.
-   - O serviço do ETL recebe o IP fixo `172.20.0.3`.
+   - O serviço do ETL recebe o IP fixo configurável (`${NETWORK_IP:-172.20.0.3}`).
 4. **Agendamento com Cron no Container**:
    - O container do ETL executa com um daemon do Cron interno (`cron -f`) e política `restart: unless-stopped`.
    - Por padrão, o agendamento dispara diariamente às 03:00 (`CRON_SCHEDULE=0 3 * * *`), ou conforme configurado no `.env`.
