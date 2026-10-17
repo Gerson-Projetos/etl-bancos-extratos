@@ -2,10 +2,26 @@ services:
   etl:
     build: .
     container_name: etl-bancos-extratos-standalone
+    restart: unless-stopped
     env_file:
       - .env
+    environment:
+      CRON_SCHEDULE: ${CRON_SCHEDULE:-0 3 * * *}
+      RUN_ON_STARTUP: ${RUN_ON_STARTUP:-true}
     volumes:
-      # Mantendo os volumes para acessar suas credenciais e a pasta de arquivos
-      - ./creds.json:/app/creds.json
-      - ./client_secret.json:/app/client_secret.json
+      - ./creds.json:/app/creds.json:ro
+      - ./client_secret.json:/app/client_secret.json:ro
       - ./arquivos:/app/arquivos
+    networks:
+      etl-net:
+        ipv4_address: ${NETWORK_IP:-172.20.0.3}
+
+networks:
+  etl-net:
+    driver: bridge
+    name: etl-network
+    ipam:
+      driver: default
+      config:
+        - subnet: ${NETWORK_SUBNET:-172.20.0.0/29}
+          gateway: ${NETWORK_GATEWAY:-172.20.0.1}

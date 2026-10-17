@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
       POSTGRES_DB: ${DB_DATABASE:-etl_db}
     ports:
-      - "5433:5432"
+      - "${DB_PORT_MAPPING:-5433}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -17,10 +17,14 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      etl-net:
+        ipv4_address: 172.20.0.2
 
   etl:
     build: .
     container_name: etl-bancos-extratos
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
@@ -28,13 +32,31 @@ services:
       - .env
     environment:
       # A classe Database.py lê as variáveis DB_*.
-      # Aqui nós sobrescrevemos o DB_HOST para o nome do container do banco ('db') em vez de localhost
+      # Aqui nós sobrescrevemos o DB_HOST para o nome do container do banco ('db')
       DB_HOST: db
-    # Volumes podem ser úteis para persistir/acessar as credenciais e arquivos extraídos sem precisar rebuildar a imagem
+      # Configuração do Cron (padrão: todo dia às 03:00, ou definido via .env)
+      CRON_SCHEDULE: ${CRON_SCHEDULE:-0 3 * * *}
+      # Executa uma carga inicial logo que o container sobe (true/false)
+      RUN_ON_STARTUP: ${RUN_ON_STARTUP:-true}
+    # Volumes para persistir arquivos e mapear credenciais de forma segura
     volumes:
-      - ./creds.json:/app/creds.json
-      - ./client_secret.json:/app/client_secret.json
+      - ./creds.json:/app/creds.json:ro
+      - ./client_secret.json:/app/client_secret.json:ro
       - ./arquivos:/app/arquivos
+    networks:
+      etl-net:
+        ipv4_address: ${NETWORK_IP:-172.20.0.3}
 
 volumes:
   pgdata:
+
+# Configuração da Rede com Subnet dedicada para produção/servidor
+networks:
+  etl-net:
+    driver: bridge
+    name: etl-network
+    ipam:
+      driver: default
+      config:
+        - subnet: ${NETWORK_SUBNET:-172.20.0.0/29}
+          gateway: ${NETWORK_GATEWAY:-172.20.0.1}
