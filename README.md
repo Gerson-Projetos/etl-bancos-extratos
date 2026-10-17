@@ -82,7 +82,51 @@ etl-bancos-extratos/
 
 5. **Execute Localmente:**
    ```bash
+   # Execução padrão do fluxo completo:
    python main.py
+   ```
+
+### 🧪 Testando e Executando Etapas Isoladas
+
+Para facilitar o desenvolvimento, depuração e validação, você pode executar etapas específicas do pipeline ou rodar diagnósticos automáticos:
+
+1. **Parâmetros no `main.py`:**
+   ```bash
+   # 1. Apenas verificar arquivos já registrados no banco:
+   python main.py --etapa verificar
+
+   # 2. Apenas baixar novos extratos do Google Drive:
+   python main.py --etapa download
+
+   # 3. Apenas converter arquivos baixados para XLSX:
+   python main.py --etapa converter
+
+   # 4. Apenas extrair e carregar dados no banco (pode filtrar por banco):
+   python main.py --etapa etl
+   python main.py --etapa etl --banco mercado_pago
+
+   # 5. Executar fluxo completo SEM deletar os arquivos temporários (inspeção local):
+   python main.py --sem-limpeza
+
+   # 6. Executar conversão e carga usando arquivos locais existentes (sem baixar do Drive):
+   python main.py --sem-download
+   ```
+
+2. **Utilitário de Diagnóstico Interativo (`test_etapas.py`):**
+   ```bash
+   # Menu interativo para testar qualquer etapa:
+   python test_etapas.py
+
+   # Diagnóstico completo de todas as etapas (Banco, Drive, Conversão, ETL, Limpeza):
+   python test_etapas.py --todas
+
+   # Testar uma etapa específica (1 a 5):
+   python test_etapas.py --etapa 1
+   ```
+
+3. **Testes Unitários Automatizados:**
+   ```bash
+   python -m unittest discover tests
    ```
 
 ### Executando com Docker e Agendamento no Servidor 🐳
