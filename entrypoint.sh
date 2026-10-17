@@ -34,6 +34,9 @@ chmod 0600 /app/cron.env
 # ------------------------------------------------------------------------------
 # NOVO: Cria o script centralizado que roda o Python e avisa o n8n no final
 # ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+# NOVO: Cria o script centralizado que roda o Python e avisa o n8n no final
+# ------------------------------------------------------------------------------
 cat <<'EOF' > /app/run_etl.sh
 #!/bin/bash
 . /app/cron.env
@@ -47,7 +50,25 @@ if /usr/local/bin/python main.py; then
     # Dispara o Webhook se a URL foi configurada no docker-compose
     if [ -n "$N8N_WEBHOOK_URL" ]; then
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Notificando n8n..."
-        curl -s -X POST "$N8N_WEBHOOK_URL" > /dev/null
+        /usr/local/bin/python -c "
+import urllib.request, json, sys, datetime
+
+try:
+    url = sys.argv[1]
+    dados = {
+        'status': 'sucesso',
+        'rotina': 'ETL Bancos Extratos',
+        'horario': datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+    }
+    req = urllib.request.Request(
+        url, 
+        data=json.dumps(dados).encode('utf-8'), 
+        headers={'Content-Type': 'application/json'}
+    )
+    urllib.request.urlopen(req)
+except Exception as e:
+    print('Erro ao notificar n8n:', e)
+" "$N8N_WEBHOOK_URL"
     fi
 else
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [ERRO] Falha na execução do ETL."
