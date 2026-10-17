@@ -85,21 +85,41 @@ etl-bancos-extratos/
    python main.py
    ```
 
-### Executando com Docker 🐳
+### Executando com Docker e Agendamento no Servidor 🐳
+ 
+Para subir a aplicação em um servidor de produção ou homologação de forma automatizada e isolada:
 
-Se preferir não instalar o Python e as dependências na sua máquina, você pode rodar todo o pipeline de forma isolada usando o Docker:
+1. **Pré-requisito:** Ter o [Docker](https://www.docker.com/) e o Docker Compose instalados no servidor.
+2. Configure o seu arquivo `.env` (baseado no `.env.example`) e adicione as credenciais do Google API (`client_secret.json` e `creds.json`) na raiz do projeto.
+3. **Configuração de Rede e Subnet**:
+   - O `docker-compose.yml` provisiona uma rede bridge isolada chamada `etl-network` com a subnet `172.20.0.0/24`.
+   - O banco PostgreSQL recebe o IP fixo `172.20.0.2`.
+   - O serviço do ETL recebe o IP fixo `172.20.0.3`.
+4. **Agendamento com Cron no Container**:
+   - O container do ETL executa com um daemon do Cron interno (`cron -f`) e política `restart: unless-stopped`.
+   - Por padrão, o agendamento dispara diariamente às 03:00 (`CRON_SCHEDULE=0 3 * * *`), ou conforme configurado no `.env`.
+   - A flag `RUN_ON_STARTUP=true` realiza um disparo imediato do pipeline na subida do container antes de aguardar o próximo ciclo do cron.
+   - Os logs do cron são roteados para o stdout do container, permitindo acompanhar tudo em tempo real via Docker.
 
-1. **Pré-requisito:** Ter o [Docker](https://www.docker.com/) instalado.
-2. Certifique-se de ter configurado o `.env` e gerado as credenciais do Google API (`client_secret.json` e `creds.json`) na raiz do projeto. Esses arquivos serão mapeados via volumes para o container.
-3. **Suba o container:**
+5. **Comandos Úteis para o Servidor:**
    ```bash
-   docker compose up --build
-   ```
-   > **💡 Dica:** Se você alterar qualquer código Python do projeto ou atualizar o `.env`, lembre-se de usar sempre a flag `--build` para garantir que o Docker incorpore as suas novas alterações na imagem!
+   # Iniciar em segundo plano (detached) compilando as alterações:
+   docker compose up -d --build
 
-O Docker criará:
-1. Um container com o **PostgreSQL** (`db`), já configurado na porta 5433 com um volume para não perder os dados inseridos.
-2. Um container do **ETL** (`etl`), que se conectará automaticamente a esse banco local, executará o pipeline de ponta a ponta e se encerrará em seguida. O banco de dados continuará rodando para que você possa inspecionar as tabelas.
+   # Acompanhar os logs do ETL e disparos do cron em tempo real:
+   docker compose logs -f etl
+
+   # Executar manualmente uma carga pontual no container em execução:
+   docker compose exec etl python main.py
+
+   # Parar os serviços:
+   docker compose down
+   ```
+
+> **💡 Caso utilize um banco externo:** Use o arquivo `docker-compose.etl-only.yml`:
+> ```bash
+> docker compose -f docker-compose.etl-only.yml up -d --build
+> ```
 
 ## Adicionando um Novo Banco
 
