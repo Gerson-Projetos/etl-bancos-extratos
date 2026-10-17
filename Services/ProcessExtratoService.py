@@ -6,6 +6,11 @@ from Conn.Database import get_db_session, Database
 from Extractors.ItauExtractor import ItauExtractor
 from Loaders.ItauLoader import ItauLoader
 
+# Import Mercado Pago
+from Extractors.MercadoPagoExtractor import MercadoPagoExtractor
+from Loaders.MercadoPagoLoader import MercadoPagoLoader
+from Models.ExtratoMercadoPago import ExtratoMercadoPago
+
 
 class ProcessExtratoService:
     def __init__(self):
@@ -47,10 +52,8 @@ class ProcessExtratoService:
     def __seleciona_banco(self, banco: str, caminho_arquivo: str, session: object):
         if banco.lower() == 'itau':
             return ItauExtractor(caminho_arquivo), ItauLoader(session)
-
         elif banco.lower() == 'mercado_pago':
-            # return MercadoPagoExtractor(), MercadoPagoLoader()
-            raise ValueError(f"Banco '{banco}' ainda não implementado.")
+            return MercadoPagoExtractor(caminho_arquivo), MercadoPagoLoader(session)
         else:
             raise ValueError(f"Banco '{banco}' não suportado.")
 
@@ -65,9 +68,9 @@ class ProcessExtratoService:
             print(f"Pasta {pasta} não existe.")
             return
             
-        arquivos = [f for f in os.listdir(pasta) if f.endswith('.xlsx')]
+        arquivos = [f for f in os.listdir(pasta) if f.endswith(('.xlsx', '.pdf'))]
         if not arquivos:
-            print("Nenhum arquivo .xlsx encontrado para processamento.")
+            print("Nenhum arquivo .xlsx ou .pdf encontrado para processamento.")
             return
             
         print(f"Encontrados {len(arquivos)} arquivos para processar. Iniciando lotes...")

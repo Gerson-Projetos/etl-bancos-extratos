@@ -36,7 +36,9 @@ class ExtratoItau(Base):
         self.hash_transacao = hashlib.sha256(string_base.encode('utf-8')).hexdigest()
         return self.hash_transacao
 
-    # ==========================================
+    def __repr__(self):
+        return f"<ExtratoItau(data='{self.data_lancamento}', descricao='{self.descricao}', valor={self.valor})>"
+# ==========================================
 # Lógica de Geração Automática do Hash
 # ==========================================
 @event.listens_for(ExtratoItau, 'before_insert')
@@ -47,6 +49,3 @@ def receive_before_insert(mapper, connection, target):
     """
     # Delega a geração de hash para o método da classe
     target.gerar_hash()
-
-    def __repr__(self):
-        return f"<ExtratoItau(data='{self.data_lancamento}', descricao='{self.descricao}', valor={self.valor})>"

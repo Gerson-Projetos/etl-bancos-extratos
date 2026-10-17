@@ -30,6 +30,7 @@ class Util:
                     print("Tabela 'contas' vazia. Inserindo dados iniciais...")
                     contas_iniciais = [
                         Conta(banco='Itau', descricao='Conta corrente', tbl_extrato='extrato_itau'),
+                        Conta(banco='Mercado Pago', descricao='Conta digital', tbl_extrato='extrato_mercado_pago'),
                     ]
                     session.add_all(contas_iniciais)
                     session.commit()
@@ -58,20 +59,22 @@ class Util:
             return []
     
     def converter_para_float(self, valor):
-        
         if pd.isna(valor) or str(valor).strip() == '':
             return None
 
+        if isinstance(valor, (int, float)):
+            return float(valor)
+
         if isinstance(valor, str):
-                # Remove R$, espaços, pontos (separadores de milhar) e substitui vírgula por ponto
-            valor_limpo = valor.replace('R$', '').strip()  # Remove R$
-            valor_limpo = valor_limpo.replace('.', '')         # Remove pontos (1.000 -> 1000)
-            valor_limpo = valor_limpo.replace(',', '.')        # Substitui vírgula por ponto (104,90 -> 104.90)
-        
-        try:
-           return float(valor_limpo)
-        except ValueError:
-            return None  # ou raise a exceção se preferir
+            # Remove R$, espaços e formatação
+            valor_limpo = valor.replace('R$', '').replace(' ', '').strip()
+            valor_limpo = valor_limpo.replace('.', '').replace(',', '.')
+            try:
+                return float(valor_limpo)
+            except ValueError:
+                return None
+
+        return None
     
 
 
